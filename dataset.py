@@ -85,7 +85,7 @@ class Physio_Dataset(Dataset):
 
         if os.path.isfile(path) == False:  # if datasetfile is none, create
             idlist = get_idlist()
-            for id_ in tqdm(idlist[:100]):
+            for id_ in tqdm(idlist):
                 try:
                     observed_values, observed_masks, gt_masks = parse_id(
                         id_, missing_ratio

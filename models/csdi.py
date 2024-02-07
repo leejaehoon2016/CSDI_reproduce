@@ -128,7 +128,7 @@ class DiffModel(nn.Module):
         """
         assert self.hidden_dim % 2 == 0
         dim = self.hidden_dim // 2
-        freq = 10.0 ** (torch.arange(dim) / (dim - 1) * 4.0).unsqueeze(0)
+        freq = 10.0 ** (torch.arange(dim) / (dim - 1) * 4.0).unsqueeze(0).cuda()
         temb = t.unsqueeze(1) * freq
         temb = torch.cat([torch.sin(temb), torch.cos(temb)], dim=1)
         return temb
@@ -145,15 +145,15 @@ class CSDI(nn.Module):
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
 
-        self.feat_embedding = torch.randn(num_feat, self.hidden_dim)
+        self.feat_embedding = nn.Parameter(torch.randn(num_feat, self.hidden_dim))
         self.diff_model = DiffModel(hidden_dim*2+1, hidden_dim, n_layers)
 
     def time_embedding(self, pos):
-        pe = torch.zeros(pos.shape[0], pos.shape[1], self.hidden_dim)
+        pe = torch.zeros(pos.shape[0], pos.shape[1], self.hidden_dim).cuda()
         position = pos.unsqueeze(2)
         div_term = 1 / torch.pow(
             10000.0, torch.arange(0, self.hidden_dim, 2) / self.hidden_dim
-        )
+        ).cuda()
         pe[:, :, 0::2] = torch.sin(position * div_term)
         pe[:, :, 1::2] = torch.cos(position * div_term)
         return pe
