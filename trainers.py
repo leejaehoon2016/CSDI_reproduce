@@ -68,12 +68,10 @@ class DiffTrainer(nn.Module):
                 noisy_target = ((1 - cond_mask) * current_sample)
                 t = torch.ones(len(observed_data)).cuda().long() * tp
                 score = model(noisy_target, cond_data, cond_mask, observed_tp, t)
-
                 coeff1 = 1 / self.alpha[t] ** 0.5
                 coeff2 = (1 - self.alpha[t]) / (1 - self.alpha_bar[t]) ** 0.5
                 coeff1, coeff2 = coeff1.unsqueeze(1).unsqueeze(1), coeff2.unsqueeze(1).unsqueeze(1)
                 current_sample = coeff1 * (current_sample - coeff2 * score)
-
                 if tp > 0:
                     noise = torch.randn_like(current_sample)
                     sigma = (
@@ -83,10 +81,8 @@ class DiffTrainer(nn.Module):
 
             imputed_samples.append(current_sample)
         imputed_samples = torch.stack(imputed_samples, dim=1).median(dim=1).values
-        
         target_mask = observed_mask - cond_mask
         residual = (observed_data - imputed_samples) * target_mask
-        
         num_eval = target_mask.sum(dim=[1,2])
         mse_loss = (residual ** 2).sum(dim=[1,2]) 
         mae_loss = residual.abs().sum(dim=[1,2])

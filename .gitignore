@@ -3,3 +3,5 @@ __pycache__
 logs/
 .ipynb_checkpoints/
 data/
+*.pth
+CSDI-main

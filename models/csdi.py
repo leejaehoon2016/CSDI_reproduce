@@ -15,14 +15,18 @@ class ResidualBlock(nn.Module):
         super().__init__()
         self.temb_proj = nn.Linear(hidden_dim, hidden_dim)
         self.cond_proj = nn.Conv2d(cond_dim, 2 * hidden_dim, 1)
+        nn.init.kaiming_normal_(self.cond_proj.weight)
         self.mid_proj = nn.Conv2d(hidden_dim, 2 * hidden_dim, 1)
+        nn.init.kaiming_normal_(self.mid_proj.weight)
         self.output_proj = nn.Conv2d(hidden_dim, 2 * hidden_dim, 1)
+        nn.init.kaiming_normal_(self.output_proj.weight)
 
         time_layer =  nn.TransformerEncoderLayer(
             d_model=hidden_dim,
             nhead=nheads,
             dim_feedforward=64,
             activation="gelu",
+            batch_first = True,
         )
         self.time_layer = nn.TransformerEncoder(time_layer, num_layers=1)
 
@@ -31,6 +35,7 @@ class ResidualBlock(nn.Module):
             nhead=nheads,
             dim_feedforward=64,
             activation="gelu",
+            batch_first = True,
         )
         self.feat_layer = nn.TransformerEncoder(feat_layer, num_layers=1)
 
@@ -90,12 +95,15 @@ class DiffModel(nn.Module):
         )
 
         self.input_proj = nn.Sequential(nn.Conv2d(2, self.hidden_dim, 1), nn.ReLU())
+        nn.init.kaiming_normal_(self.input_proj[0].weight)
         self.compute_block = nn.ModuleList([ResidualBlock(cond_dim, hidden_dim) for i in range(n_layers)])
         self.output_proj = nn.Sequential(
             nn.Conv2d(self.hidden_dim, self.hidden_dim, 1),
             nn.ReLU(),
             nn.Conv2d(self.hidden_dim, 1, 1),
         )
+        nn.init.kaiming_normal_(self.output_proj[0].weight)
+        nn.init.zeros_(self.output_proj[-1].weight)
 
     def forward(self, x: torch.tensor, cond: torch.tensor, t: torch.tensor):
         """
@@ -115,7 +123,7 @@ class DiffModel(nn.Module):
             x, skip_connection = each_layer(x, cond, temb)
             skip_lst.append(skip_connection)
 
-        x = torch.sum(torch.stack(skip_lst), dim=0) / math.sqrt(len(skip_lst))
+        x = torch.sum(torch.stack(skip_lst, dim=0), dim=0) / math.sqrt(len(skip_lst))
         x = self.output_proj(x).squeeze(1)
         return x
 
@@ -138,7 +146,7 @@ class CSDI(nn.Module):
     def __init__(
         self,
         num_feat: int,
-        hidden_dim: int = 128,
+        hidden_dim: int = 64,
         n_layers: int = 3,
     ):
         super().__init__()
