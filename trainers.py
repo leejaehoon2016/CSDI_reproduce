@@ -8,7 +8,7 @@ class DiffTrainer(nn.Module):
         num_steps: int = 50,
         beta_start: float = 0.0001,
         beta_end: float = 0.5,
-        n_samples: int = 10,
+        n_samples: int = 100,
     ):
         super().__init__()
         self.num_steps = num_steps
@@ -37,9 +37,9 @@ class DiffTrainer(nn.Module):
 
         target_mask = observed_mask - cond_mask
         residual = (noise - score) * target_mask
-        num_eval = target_mask.sum(dim=[1,2])
-        loss = (residual ** 2).sum(dim=[1,2]) / (num_eval + 1e-6)
-        return loss.mean()
+        num_eval = target_mask.sum()
+        loss = (residual ** 2).sum() / (num_eval + 1e-6)
+        return loss
 
     def get_randmask(self, observed_mask):
         rand_for_mask = torch.rand_like(observed_mask) * observed_mask
@@ -86,7 +86,8 @@ class DiffTrainer(nn.Module):
         
         target_mask = observed_mask - cond_mask
         residual = (observed_data - imputed_samples) * target_mask
+        
         num_eval = target_mask.sum(dim=[1,2])
-        mse_loss = (residual ** 2).sum(dim=[1,2]) / (num_eval + 1e-6)
-        mae_loss = residual.abs().sum(dim=[1,2]) / (num_eval + 1e-6)
-        return mse_loss, mae_loss
+        mse_loss = (residual ** 2).sum(dim=[1,2]) 
+        mae_loss = residual.abs().sum(dim=[1,2])
+        return mse_loss, mae_loss, num_eval
