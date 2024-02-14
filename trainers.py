@@ -33,6 +33,7 @@ class DiffTrainer(nn.Module):
 
         cond_mask = self.get_randmask(observed_mask)
         cond_data = (cond_mask * observed_data)
+        noisy_data = ((1 - cond_mask) * noisy_data)
         score = model(noisy_data, cond_data, cond_mask, observed_tp, t)
 
         target_mask = observed_mask - cond_mask
